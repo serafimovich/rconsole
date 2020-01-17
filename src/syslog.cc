@@ -33,15 +33,20 @@ using namespace v8;
 char title[1024];
 
 void open(const FunctionCallbackInfo<v8::Value>& args) {
-  args[0]->ToString()->WriteUtf8((char*) &title);
-  int facility = args[1]->ToInteger()->Int32Value();
-  int log_upto = args[2]->ToInteger()->Int32Value();
+  v8::Isolate* isolate = args.GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  v8::String::Utf8Value t(isolate, args[1]);
+  char* title(*t);
+
+  int facility = args[1].As<Number>()->Value();
+  int log_upto = args[2].As<Number>()->Value();
+
   setlogmask(LOG_UPTO(log_upto));
   openlog(title, LOG_PID | LOG_NDELAY, facility);
 
-  v8::Isolate* isolate = args.GetIsolate();
-  v8::HandleScope scope(isolate);
-  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "true"));
+
+  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "true").ToLocalChecked());
 }
 
 void exit(const FunctionCallbackInfo<v8::Value>& args) {
@@ -49,20 +54,22 @@ void exit(const FunctionCallbackInfo<v8::Value>& args) {
 
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "true"));
+  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "true").ToLocalChecked());
 }
 
 void log(const FunctionCallbackInfo<v8::Value>& args) {
-  int severity = args[0]->ToInteger()->Int32Value();
-  v8::String::Utf8Value message(args[1]->ToString());
-  syslog(severity, "%s", *message );
-
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
-  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "true"));
+
+  int severity = args[0].As<Number>()->Value();
+
+  v8::String::Utf8Value message(isolate, args[1]);
+  syslog(severity, "%s", *message );
+
+  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "true").ToLocalChecked());
 }
 
-void init(v8::Handle<v8::Object> target) {
+void init(v8::Local<v8::Object> target) {
   NODE_SET_METHOD(target, "open", open);
   NODE_SET_METHOD(target, "exit", exit);
   NODE_SET_METHOD(target, "log", log);
