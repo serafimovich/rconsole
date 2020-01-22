@@ -36,8 +36,8 @@ void open(const FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   v8::HandleScope scope(isolate);
 
-  v8::String::Utf8Value t(isolate, args[1]);
-  char* title(*t);
+  v8::String::Utf8Value t(isolate, args[0]);
+  strcpy(title, *t);
 
   int facility = args[1].As<Number>()->Value();
   int log_upto = args[2].As<Number>()->Value();
